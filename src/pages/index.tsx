@@ -69,7 +69,7 @@ const Page = () => {
           <div key={post.id} className="postContent">
             <div>
               {post.title}{" "}
-              {new Date(post.updatedAt).toLocaleString(undefined, {
+              {new Date(post.updatedAt).toLocaleString("ja-JP", {
                 timeZone: "Asia/Tokyo",
               })}
             </div>
