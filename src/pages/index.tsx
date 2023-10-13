@@ -100,20 +100,22 @@ const Page = () => {
           <div>
             Page {page}/{postPages}
           </div>
-          <button
-            className="border p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-            disabled={page <= 1}
-            onClick={() => router.push({ query: { page: page - 1 } })}
+          <Link
+            className={`border p-1 rounded ${
+              page <= 1 ? "opacity-30 cursor-not-allowed" : ""
+            }`}
+            href={page > 0 ? `/?page=${page - 1}` : ""}
           >
             ←
-          </button>
-          <button
-            className="border p-1 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-            disabled={page >= postPages}
-            onClick={() => router.push({ query: { page: page + 1 } })}
+          </Link>
+          <Link
+            className={`border p-1 rounded ${
+              page >= postPages ? "opacity-30 cursor-not-allowed" : ""
+            }`}
+            href={page < postPages ? `/?page=${page + 1}` : ""}
           >
             →
-          </button>
+          </Link>
           All:{postCounts}
         </div>
 
