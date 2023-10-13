@@ -1,3 +1,4 @@
+import "../global.css";
 import { AppContext, AppProps } from "next/app";
 import { UrqlProvider } from "@/components/Provider/UrqlProvider";
 import { getHost } from "@/libs/getHost";

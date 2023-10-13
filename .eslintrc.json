@@ -9,6 +9,7 @@
   "ignorePatterns": ["src/generated/*", "node_modules/*", ".next/*"],
   "rules": {
     "no-empty": 0,
+    "no-undef": 0,
     "@typescript-eslint/no-namespace": 0,
     "@typescript-eslint/explicit-module-boundary-types": 0,
     "@typescript-eslint/no-non-null-assertion": 0,
