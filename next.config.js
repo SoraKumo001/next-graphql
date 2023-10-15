@@ -6,5 +6,4 @@ const config = {
     serverComponentsExternalPackages: ["@whatwg-node"],
   },
 };
-// eslint-disable-next-line no-undef
 module.exports = config;
