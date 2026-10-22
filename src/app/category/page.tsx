@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useMutation, useQuery } from "urql";
 import {
+  CreateOneCategory,
+  FindManyCategory,
   OrderBy,
-  useCreateOneCategoryMutation,
-  useFindManyCategoryQuery,
-} from "@/generated/graphql";
+} from "../../../graphql/query.graphql";
 
 // GraphQLのadditionalTypenamesを設定する
 const context = {
@@ -13,13 +14,14 @@ const context = {
 };
 
 export default function CategoryPage() {
-  const [{ data: dataCategory }] = useFindManyCategoryQuery({
+  const [{ data: dataCategory }] = useQuery({
+    query: FindManyCategory,
     context,
     variables: { orderBy: { name: OrderBy.Asc } },
   });
   // カテゴリ一覧を取得
   const [{ fetching: fetchingCategory }, createCategory] =
-    useCreateOneCategoryMutation();
+    useMutation(CreateOneCategory);
   // カテゴリの作成
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

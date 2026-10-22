@@ -1,0 +1,16 @@
+{
+  "name": "graphql-content-mapper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "typescript": {
+    "contentMapper": {
+      "exec": [
+        "node",
+        "index.js"
+      ],
+      "outputExtensions": {
+        ".graphql": ".js"
+      }
+    }
+  }
+}

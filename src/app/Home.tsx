@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useMutation, useQuery } from "urql";
 import {
+  CountPost,
+  CreateOnePost,
+  DeleteOnePost,
+  FindManyCategory,
+  FindManyPost,
   OrderBy,
-  useCountPostQuery,
-  useCreateOnePostMutation,
-  useDeleteOnePostMutation,
-  useFindManyCategoryQuery,
-  useFindManyPostQuery,
-} from "@/generated/graphql";
+} from "../../graphql/query.graphql";
 
 // GraphQLのadditionalTypenamesを設定する
 const context = {
@@ -19,8 +20,9 @@ const context = {
 const PageLimit = 5;
 
 export const Home = ({ page }: { page: number }) => {
-  // useFindManyPostQueryフックを使用して、投稿を取得する(updatedAtを降順)
-  const [{ data: dataPost }] = useFindManyPostQuery({
+  // FindManyPostを使用して、投稿を取得する(updatedAtを降順)
+  const [{ data: dataPost }] = useQuery({
+    query: FindManyPost,
     variables: {
       orderBy: { updatedAt: OrderBy.Desc },
       categoriesOrderBy: { name: OrderBy.Asc },
@@ -29,16 +31,20 @@ export const Home = ({ page }: { page: number }) => {
     },
     context,
   });
-  const [{ data: dataCategory }] = useFindManyCategoryQuery({
+  const [{ data: dataCategory }] = useQuery({
+    query: FindManyCategory,
     variables: { orderBy: { name: OrderBy.Asc } },
   });
   // 投稿の総数を取得する
-  const [{ data: dataPostCount }] = useCountPostQuery({ context });
+  const [{ data: dataPostCount }] = useQuery({
+    query: CountPost,
+    context,
+  });
   // 新しい投稿を作成する
   const [{ fetching: fetchingCreatePost }, createPost] =
-    useCreateOnePostMutation();
+    useMutation(CreateOnePost);
   // 投稿を削除する
-  const [, deletePost] = useDeleteOnePostMutation();
+  const [, deletePost] = useMutation(DeleteOnePost);
 
   // 投稿フォームが送信されたときに呼び出される関数
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

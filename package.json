@@ -14,14 +14,14 @@
   "scripts": {
     "dev:next": "next",
     "dev:docker": "docker compose -p next-graphql -f docker/docker-compose.yml up -d",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && npm run typecheck && next build",
+    "typecheck": "tsc --runExternalCode --noEmit",
     "start": "next start",
     "lint": "eslint --fix ./src",
     "lint:fix": "eslint --fix ./src",
     "prisma:reset": "prisma migrate reset -f",
     "prisma:migrate": "prisma format && prisma migrate dev",
-    "prisma:generate": "prisma generate",
-    "graphql:codegen": "graphql-codegen --config codegen/codegen.ts"
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@apollo/explorer": "^3.7.4",
@@ -60,13 +60,14 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
+    "graphql-content-mapper": "file:./packages/graphql-content-mapper",
     "graphql-tag": "^2.12.7",
     "postcss": "^8.5.31",
     "prisma": "^7.10.1",
     "tailwindcss": "^4.3.3",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.1.0-beta"
   },
   "main": "index.js",
   "repository": "https://github.com/SoraKumo001/next-graphql"

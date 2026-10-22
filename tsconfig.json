@@ -1,14 +1,10 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "incremental": true,
+    "incremental": false,
     "esModuleInterop": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -23,20 +19,24 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
+    "rewriteRelativeImportExtensions": true,
     "target": "ES2017"
   },
+  "contentMappers": [
+    {
+      "package": "graphql-content-mapper",
+      "extensions": [".graphql"]
+    }
+  ],
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "graphql/query.graphql",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
