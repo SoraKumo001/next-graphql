@@ -1,3 +1,5 @@
+"use client";
+
 import { ApolloExplorer } from "@apollo/explorer/react";
 import { FC } from "react";
 

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   OrderBy,
@@ -10,7 +12,7 @@ const context = {
   additionalTypenames: ["Category"],
 };
 
-const Page = () => {
+export default function CategoryPage() {
   const [{ data: dataCategory }] = useFindManyCategoryQuery({
     context,
     variables: { orderBy: { name: OrderBy.Asc } },
@@ -21,14 +23,13 @@ const Page = () => {
   // カテゴリの作成
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const target = e.target as typeof e.target & {
-      name: { value: string };
-    };
+    const formData = new FormData(e.currentTarget);
+    const name = (formData.get("name") as string)?.trim();
     // 新しいカテゴリを作成する
-    if (target.name.value) {
+    if (name) {
       createCategory({
         input: {
-          name: target.name.value,
+          name,
         },
       });
       // フォームをリセットする
@@ -46,8 +47,8 @@ const Page = () => {
           className="grid border-gray-400 border-solid"
           onSubmit={handleSubmit}
         >
-          <label htmlFor="flex-1">Category</label>
-          <input className="border p-1" type="text" name="name" />
+          <label htmlFor="name">Category</label>
+          <input id="name" className="border p-1" type="text" name="name" />
           <button
             className="shadow bg-blue-500 hover:bg-blue-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded m-1 disabled:opacity-30 disabled:cursor-not-allowed"
             type="submit"
@@ -69,6 +70,4 @@ const Page = () => {
       </div>
     </>
   );
-};
-
-export default Page;
+}

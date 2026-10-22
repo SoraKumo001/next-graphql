@@ -1,3 +1,5 @@
+"use client";
+
 import {
   NextSSRProvider,
   createNextSSRExchange,
@@ -20,7 +22,7 @@ export const UrqlProvider = ({
 }) => {
   const client = useMemo(() => {
     const nextSSRExchange = createNextSSRExchange();
-    const url = isServerSide ? `${host}${endpoint}` : endpoint;
+    const url = isServerSide && host ? `${host}${endpoint}` : endpoint;
     return new Client({
       url,
       fetchOptions: {
@@ -32,7 +34,7 @@ export const UrqlProvider = ({
       suspense: isServerSide,
       exchanges: [cacheExchange, nextSSRExchange, fetchExchange],
     });
-  }, [host, cookie]);
+  }, [host, cookie, endpoint]);
   return (
     <Provider value={client}>
       <NextSSRProvider>{children}</NextSSRProvider>

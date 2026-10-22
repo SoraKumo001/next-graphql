@@ -2,8 +2,6 @@
  * @type { import("next").NextConfig}
  */
 const config = {
-  experimental: {
-    serverComponentsExternalPackages: ["@whatwg-node"],
-  },
+  serverExternalPackages: ["@whatwg-node"],
 };
 module.exports = config;

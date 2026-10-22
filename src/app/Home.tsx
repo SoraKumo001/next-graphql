@@ -1,5 +1,6 @@
+"use client";
+
 import Link from "next/link";
-import { useRouter } from "next/router";
 import {
   OrderBy,
   useCountPostQuery,
@@ -17,10 +18,7 @@ const context = {
 // 1ページに表示する投稿の数
 const PageLimit = 5;
 
-const Page = () => {
-  const router = useRouter();
-  // ページ番号を取得する
-  const page = Number(router.query.page) || 1;
+export const Home = ({ page }: { page: number }) => {
   // useFindManyPostQueryフックを使用して、投稿を取得する(updatedAtを降順)
   const [{ data: dataPost }] = useFindManyPostQuery({
     variables: {
@@ -45,22 +43,17 @@ const Page = () => {
   // 投稿フォームが送信されたときに呼び出される関数
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const target = e.target as typeof e.target & {
-      title: { value: string };
-      content: { value: string };
-      category: RadioNodeList;
-    };
-    // カテゴリIDを取り出す
-    const categories = Array.from(target.category).flatMap((category) =>
-      category instanceof HTMLInputElement && category.checked
-        ? [category.value]
-        : []
-    );
+    const formData = new FormData(e.currentTarget);
+    const title = (formData.get("title") as string)?.trim() || "タイトルなし";
+    const content = (formData.get("content") as string)?.trim() || "内容なし";
+    // カテゴリIDを取り出す (0件や1件でも安全に取得可能)
+    const categories = formData.getAll("category") as string[];
+
     // 新しい投稿を作成する
     createPost({
       input: {
-        title: target.title.value || "タイトルなし",
-        content: target.content.value || "内容なし",
+        title,
+        content,
         categories: {
           connect: categories.map((id) => ({
             id,
@@ -87,10 +80,15 @@ const Page = () => {
           className="grid border-gray-400 border-solid"
           onSubmit={handleSubmit}
         >
-          <label htmlFor="flex-1">Title</label>
-          <input className="border p-1" type="text" name="title" />
+          <label htmlFor="title">Title</label>
+          <input id="title" className="border p-1" type="text" name="title" />
           <label htmlFor="content">Content</label>
-          <textarea className="border p-2 rounded" rows={5} name="content" />
+          <textarea
+            id="content"
+            className="border p-2 rounded"
+            rows={5}
+            name="content"
+          />
           {/* カテゴリ一覧 */}
           <div className="flex gap-2 flex-wrap p-2">
             {dataCategory?.findManyCategory.map((category) => (
@@ -120,7 +118,7 @@ const Page = () => {
           </div>
           <Link
             className={`border p-1 rounded ${
-              page <= 1 ? "opacity-30 cursor-not-allowed" : ""
+              page <= 1 ? "opacity-30 cursor-not-allowed pointer-events-none" : ""
             }`}
             href={`/?page=${page <= 1 ? page : page - 1}`}
           >
@@ -128,7 +126,9 @@ const Page = () => {
           </Link>
           <Link
             className={`border p-1 rounded ${
-              page >= postPages ? "opacity-30 cursor-not-allowed" : ""
+              page >= postPages
+                ? "opacity-30 cursor-not-allowed pointer-events-none"
+                : ""
             }`}
             href={`/?page=${page >= postPages ? page : page + 1}`}
           >
@@ -186,5 +186,3 @@ const Page = () => {
     </>
   );
 };
-
-export default Page;
