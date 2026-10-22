@@ -11,7 +11,6 @@ import {
   OrderBy,
 } from "../../graphql/query.graphql";
 
-// GraphQLのadditionalTypenamesを設定する
 const context = {
   additionalTypenames: ["Post", "Category"],
 };
@@ -124,7 +123,9 @@ export const Home = ({ page }: { page: number }) => {
           </div>
           <Link
             className={`border p-1 rounded ${
-              page <= 1 ? "opacity-30 cursor-not-allowed pointer-events-none" : ""
+              page <= 1
+                ? "opacity-30 cursor-not-allowed pointer-events-none"
+                : ""
             }`}
             href={`/?page=${page <= 1 ? page : page - 1}`}
           >

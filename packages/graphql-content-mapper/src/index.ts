@@ -1,16 +1,43 @@
-const fs = require("fs");
-const path = require("path");
-const { parse } = require("graphql");
-const { executeCodegen } = require("@graphql-codegen/cli");
+import * as fs from "node:fs";
+import * as path from "node:path";
+import process from "node:process";
+import { Buffer } from "node:buffer";
+import { parse, type DocumentNode, type OperationDefinitionNode } from "graphql";
+import { executeCodegen } from "@graphql-codegen/cli";
+
+interface JsonRpcRequest {
+  jsonrpc?: string;
+  id?: number | string;
+  method: string;
+  params?: any;
+}
+
+interface JsonRpcResponse {
+  jsonrpc: "2.0";
+  id: number | string;
+  result?: any;
+  error?: any;
+}
+
+interface TransformResult {
+  text: string;
+  extension: string;
+  mappings: unknown[];
+}
 
 const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-// Mute stdout during any library logs so JSON-RPC framing is not corrupted
-process.stdout.write = (chunk, encoding, callback) => {
-  if (typeof callback === "function") callback();
-  return true;
-};
 
-function send(response) {
+// Mute stdout during any library logs so JSON-RPC framing is not corrupted
+process.stdout.write = ((chunk: any, encoding?: any, callback?: any): boolean => {
+  if (typeof encoding === "function") {
+    encoding();
+  } else if (typeof callback === "function") {
+    callback();
+  }
+  return true;
+}) as any;
+
+function send(response: JsonRpcResponse): void {
   const json = JSON.stringify(response);
   const len = Buffer.byteLength(json, "utf-8");
   const header = `Content-Length: ${len}\r\n\r\n`;
@@ -19,33 +46,38 @@ function send(response) {
 
 let buffer = Buffer.alloc(0);
 
-process.stdin.on("data", (chunk) => {
+process.stdin.on("data", (chunk: Buffer) => {
   buffer = Buffer.concat([buffer, chunk]);
   while (true) {
     const headerEnd = buffer.indexOf("\r\n\r\n");
     if (headerEnd === -1) break;
+
     const header = buffer.subarray(0, headerEnd).toString("utf-8");
     const match = header.match(/Content-Length:\s*(\d+)/i);
     if (!match) break;
+
     const contentLength = parseInt(match[1], 10);
     const bodyStart = headerEnd + 4;
     if (buffer.length < bodyStart + contentLength) {
       break;
     }
+
     const body = buffer.subarray(bodyStart, bodyStart + contentLength).toString("utf-8");
     buffer = buffer.subarray(bodyStart + contentLength);
 
     try {
-      const msg = JSON.parse(body);
+      const msg: JsonRpcRequest = JSON.parse(body);
       handleMessage(msg);
-    } catch (e) {}
+    } catch {
+      // Ignore parse error
+    }
   }
 });
 
-function deduplicateDeclarations(content) {
+function deduplicateDeclarations(content: string): string {
   const lines = content.split("\n");
-  const seen = new Set();
-  const cleaned = [];
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
   let skipping = false;
   let braceCount = 0;
 
@@ -77,7 +109,11 @@ function deduplicateDeclarations(content) {
   return cleaned.join("\n");
 }
 
-async function transformGraphQL(fileName, content, projectDir) {
+async function transformGraphQL(
+  fileName: string,
+  content: string,
+  projectDir: string
+): Promise<TransformResult> {
   if (fileName.endsWith("schema.graphql")) {
     return {
       text: "export {};",
@@ -96,7 +132,7 @@ async function transformGraphQL(fileName, content, projectDir) {
   }
 
   try {
-    const doc = parse(content);
+    const doc: DocumentNode = parse(content);
 
     const codegenResult = await executeCodegen({
       schema: schemaPath,
@@ -116,9 +152,9 @@ async function transformGraphQL(fileName, content, projectDir) {
     const cleanGenerated = deduplicateDeclarations(rawGenerated);
 
     const operations = doc.definitions
-      .filter((d) => d.kind === "OperationDefinition" && d.name)
+      .filter((d): d is OperationDefinitionNode => d.kind === "OperationDefinition" && !!d.name)
       .map((d) => ({
-        name: d.name.value,
+        name: d.name!.value,
         op: d.operation.charAt(0).toUpperCase() + d.operation.slice(1),
       }));
 
@@ -144,19 +180,14 @@ export interface TypedDocumentNode<
       })
       .join("\n");
 
-    const fullText = [
-      docTypeDefinitions,
-      cleanGenerated,
-      docExports,
-    ].join("\n\n");
+    const fullText = [docTypeDefinitions, cleanGenerated, docExports].join("\n\n");
 
-    
     return {
       text: fullText,
       extension: ".ts",
       mappings: [],
     };
-  } catch (err) {
+  } catch {
     return {
       text: "export {};",
       extension: ".ts",
@@ -165,12 +196,12 @@ export interface TypedDocumentNode<
   }
 }
 
-let projectDirMap = new Map();
+const projectDirMap = new Map<unknown, string>();
 
-async function handleMessage(msg) {
+async function handleMessage(msg: JsonRpcRequest): Promise<void> {
   if (msg.id === undefined) return;
 
-  let result = null;
+  let result: any = null;
   switch (msg.method) {
     case "initialize":
       result = {
@@ -180,7 +211,7 @@ async function handleMessage(msg) {
       break;
     case "openProject":
       {
-        const configPath = msg.params?.configFileName;
+        const configPath: string | undefined = msg.params?.configFileName;
         const projectDir = configPath ? path.dirname(configPath) : process.cwd();
         projectDirMap.set(msg.params?.projectHandle, projectDir);
         result = {};
@@ -199,6 +230,7 @@ async function handleMessage(msg) {
     default:
       result = {};
   }
+
   send({
     jsonrpc: "2.0",
     id: msg.id,

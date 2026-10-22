@@ -3,7 +3,7 @@
  */
 const path = require("path");
 
-const graphqlLoader = path.resolve(__dirname, "packages/graphql-content-mapper/loader.js");
+const graphqlLoader = path.resolve(__dirname, "packages/graphql-content-mapper/dist/loader.js");
 
 const config = {
   serverExternalPackages: ["@whatwg-node"],

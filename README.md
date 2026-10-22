@@ -2,8 +2,6 @@
 
 ## How to run the sample
 
-<https://next-graphql-five.vercel.app/>
-
 ```sh
 # Start docker
 yarn dev:docker

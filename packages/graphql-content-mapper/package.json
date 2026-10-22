@@ -1,12 +1,16 @@
 {
   "name": "graphql-content-mapper",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
   "typescript": {
     "contentMapper": {
       "exec": [
         "node",
-        "index.js"
+        "dist/index.js"
       ],
       "outputExtensions": {
         ".graphql": ".js"

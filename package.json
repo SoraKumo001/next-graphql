@@ -14,8 +14,9 @@
   "scripts": {
     "dev:next": "next",
     "dev:docker": "docker compose -p next-graphql -f docker/docker-compose.yml up -d",
-    "build": "prisma generate && npm run typecheck && next build",
-    "typecheck": "tsc --runExternalCode --noEmit",
+    "build": "npm run build:mapper && prisma generate && npm run typecheck && next build",
+    "build:mapper": "tsc -p packages/graphql-content-mapper/tsconfig.json",
+    "typecheck": "npm run build:mapper && tsc --runExternalCode --noEmit",
     "start": "next start",
     "lint": "eslint --fix ./src",
     "lint:fix": "eslint --fix ./src",
