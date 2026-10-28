@@ -3,10 +3,13 @@
 import { ApolloExplorer } from "@apollo/explorer/react";
 import { FC } from "react";
 
-export const GraphQLExplorer: FC<{ schema: string }> = ({ schema }) => {
+export const GraphQLExplorer: FC<{ schema: string; className?: string }> = ({
+  schema,
+  className = "w-full h-[calc(100vh-4rem)]",
+}) => {
   return (
     <ApolloExplorer
-      className="fixed inset-0"
+      className={className}
       schema={schema}
       endpointUrl="/graphql"
       persistExplorerState={true}
