@@ -1,9 +1,7 @@
 /**
  * @type { import("next").NextConfig}
  */
-const path = require("path");
-
-const graphqlLoader = path.resolve(__dirname, "packages/graphql-content-mapper/dist/loader.js");
+const withGraphQL = require("graphql-content-mapper/next");
 
 const config = {
   serverExternalPackages: ["@whatwg-node"],
@@ -12,21 +10,6 @@ const config = {
     // We run typecheck via 'npm run typecheck'
     ignoreBuildErrors: true,
   },
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.(graphql|gql)$/,
-      exclude: /node_modules/,
-      loader: graphqlLoader,
-    });
-    return config;
-  },
-  turbopack: {
-    rules: {
-      "*.graphql": {
-        loaders: [graphqlLoader],
-        as: "*.js",
-      },
-    },
-  },
 };
-module.exports = config;
+
+module.exports = withGraphQL(config);

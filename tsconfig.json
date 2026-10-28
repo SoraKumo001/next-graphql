@@ -27,7 +27,13 @@
   "contentMappers": [
     {
       "package": "graphql-content-mapper",
-      "extensions": [".graphql"]
+      "extensions": [".graphql"],
+      "options": {
+        "schema": "./graphql/schema.graphql",
+        "scalars": {
+          "DateTime": "string"
+        }
+      }
     }
   ],
   "include": [

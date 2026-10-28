@@ -41,7 +41,7 @@ const path = __importStar(require("node:path"));
 const node_process_1 = __importDefault(require("node:process"));
 const node_buffer_1 = require("node:buffer");
 const graphql_1 = require("graphql");
-const cli_1 = require("@graphql-codegen/cli");
+const config_js_1 = require("./config.js");
 const originalStdoutWrite = node_process_1.default.stdout.write.bind(node_process_1.default.stdout);
 // Mute stdout during any library logs so JSON-RPC framing is not corrupted
 node_process_1.default.stdout.write = ((chunk, encoding, callback) => {
@@ -121,15 +121,26 @@ function deduplicateDeclarations(content) {
     }
     return cleaned.join("\n");
 }
-async function transformGraphQL(fileName, content, projectDir) {
-    if (fileName.endsWith("schema.graphql")) {
+// Lazy-load @graphql-codegen/cli so initialize responds instantly (<10ms)
+let cachedExecuteCodegen = null;
+async function getExecuteCodegen() {
+    if (!cachedExecuteCodegen) {
+        const mod = await import("@graphql-codegen/cli");
+        cachedExecuteCodegen = mod.executeCodegen;
+    }
+    return cachedExecuteCodegen;
+}
+const projectContextMap = new Map();
+async function transformGraphQL(fileName, content, projectHandle) {
+    const context = projectContextMap.get(projectHandle) || { projectDir: node_process_1.default.cwd() };
+    const { config, schemaPath } = (0, config_js_1.resolveConfig)(context.projectDir, context.options, context.configFileName);
+    if (fileName.endsWith("schema.graphql") || path.resolve(fileName) === path.resolve(schemaPath)) {
         return {
             text: "export {};",
             extension: ".ts",
             mappings: [],
         };
     }
-    const schemaPath = path.join(projectDir, "graphql", "schema.graphql");
     if (!fs.existsSync(schemaPath)) {
         return {
             text: "export {};",
@@ -139,16 +150,21 @@ async function transformGraphQL(fileName, content, projectDir) {
     }
     try {
         const doc = (0, graphql_1.parse)(content);
-        const codegenResult = await (0, cli_1.executeCodegen)({
+        const executeCodegen = await getExecuteCodegen();
+        const codegenConfig = {
+            scalars: config.scalars,
+            skipTypename: config.skipTypename ?? false,
+            ...(config.enumsAsTypes !== undefined && { enumsAsTypes: config.enumsAsTypes }),
+            ...(config.futureProofEnums !== undefined && { futureProofEnums: config.futureProofEnums }),
+            ...config.codegenConfig,
+        };
+        const codegenResult = await executeCodegen({
             schema: schemaPath,
             documents: fileName,
             generates: {
                 "virtual.ts": {
                     plugins: ["typescript", "typescript-operations"],
-                    config: {
-                        scalars: { DateTime: "string" },
-                        skipTypename: false,
-                    },
+                    config: codegenConfig,
                 },
             },
         });
@@ -195,7 +211,6 @@ export interface TypedDocumentNode<
         };
     }
 }
-const projectDirMap = new Map();
 async function handleMessage(msg) {
     if (msg.id === undefined)
         return;
@@ -211,18 +226,21 @@ async function handleMessage(msg) {
             {
                 const configPath = msg.params?.configFileName;
                 const projectDir = configPath ? path.dirname(configPath) : node_process_1.default.cwd();
-                projectDirMap.set(msg.params?.projectHandle, projectDir);
+                projectContextMap.set(msg.params?.projectHandle, {
+                    projectDir,
+                    configFileName: configPath,
+                    options: msg.params?.options,
+                });
                 result = {};
             }
             break;
         case "transform":
             {
-                const projectDir = projectDirMap.get(msg.params?.projectHandle) || node_process_1.default.cwd();
-                result = await transformGraphQL(msg.params?.fileName, msg.params?.content, projectDir);
+                result = await transformGraphQL(msg.params?.fileName, msg.params?.content, msg.params?.projectHandle);
             }
             break;
         case "closeProject":
-            projectDirMap.delete(msg.params?.projectHandle);
+            projectContextMap.delete(msg.params?.projectHandle);
             result = null;
             break;
         default:

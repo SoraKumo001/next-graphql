@@ -1,74 +1,29 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = graphqlContentMapperLoader;
-const fs = __importStar(require("node:fs"));
-const path = __importStar(require("node:path"));
 const node_process_1 = __importDefault(require("node:process"));
-// @ts-expect-error graphql-tag/loader has no official types
-const loader_1 = __importDefault(require("graphql-tag/loader"));
+const compiler_js_1 = require("./compiler.js");
 function graphqlContentMapperLoader(source) {
     if (this.cacheable) {
         this.cacheable();
     }
-    const rawJs = loader_1.default.call(this, source);
-    // Read schema to find enums and append them to runtime module.exports
-    try {
-        const schemaPath = path.resolve(node_process_1.default.cwd(), "graphql/schema.graphql");
-        if (fs.existsSync(schemaPath)) {
-            const schemaText = fs.readFileSync(schemaPath, "utf-8");
-            const enumMatches = [...schemaText.matchAll(/enum\s+(\w+)\s*\{([^}]+)\}/g)];
-            let enumCode = "";
-            for (const match of enumMatches) {
-                const enumName = match[1];
-                const values = match[2]
-                    .split("\n")
-                    .map((v) => v.trim())
-                    .filter((v) => v && !v.startsWith("#"));
-                const objEntries = values.map((v) => `"${v}": "${v}"`).join(", ");
-                enumCode += `\nmodule.exports["${enumName}"] = { ${objEntries} };\n`;
-            }
-            return rawJs + enumCode;
-        }
+    const options = typeof this.getOptions === "function" ? this.getOptions() : {};
+    const projectDir = this.rootContext || node_process_1.default.cwd();
+    const { code, schemaPath } = (0, compiler_js_1.compileGraphQLToEsm)(source, projectDir, options);
+    if (this.addDependency && schemaPath) {
+        this.addDependency(schemaPath);
     }
-    catch {
-        // Ignore error
-    }
-    return rawJs;
+    return code;
 }
-module.exports = graphqlContentMapperLoader;
+// Support CommonJS require
+try {
+    if (typeof module !== "undefined" && module.exports) {
+        module.exports = graphqlContentMapperLoader;
+    }
+}
+catch {
+    // Ignore in pure ESM environment
+}

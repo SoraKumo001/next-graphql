@@ -95,13 +95,47 @@ next-graphql/
          (※ ディスク上に中間ファイルは一切生成されません)
 ```
 
-### 2. Next.js 実行時のローダー連携
+### 2. 実行時バンドラ連携（Next.js / Vite / その他）
 
-ブラウザ実行時には、`next.config.js` に登録されたカスタムローダー (`packages/graphql-content-mapper/dist/loader.js`) が動作します：
+ブラウザ実行時には、バンドラに応じたアダプターが動作し、クエリ AST および Enum を純粋な ES Modules (`export const ...`) として提供します：
 
-1. `graphql-tag/loader` でクエリ文字列を AST に変換。
-2. `schema.graphql` 内の Enum 定義（`OrderBy: { Asc: "Asc", Desc: "Desc" }` 等）を自動抽出し、ランタイムの `module.exports` に付与。
-3. Turbopack と Webpack の両環境で `.graphql` をそのまま JavaScript としてインポート可能にします。
+1. `graphql` の AST パーサーで各 Operation と必要な Fragment のみを抽出した DocumentNode を構築。
+2. `schema.graphql` 内の Enum 定義（`OrderBy: { Asc: "Asc", Desc: "Desc" }` 等）を自動抽出し、Named Export として付与。
+3. **Next.js (Turbopack / Webpack)**: `withGraphQLContentMapper` またはカスタムローダーにより、`.graphql` を直接インポート可能。
+4. **Vite**: `graphql-content-mapper/vite` プラグインにより、ネイティブ ESM / HMR（スキーマ変更監視を含む）に完全対応。
+
+#### 各環境の設定例
+
+- **Next.js (`next.config.js`)**:
+  ```js
+  const withGraphQL = require("graphql-content-mapper/next");
+  module.exports = withGraphQL({
+    // 通常の Next.js 設定
+  });
+  ```
+
+- **Vite (`vite.config.ts`)**:
+  ```ts
+  import { defineConfig } from "vite";
+  import graphql from "graphql-content-mapper/vite";
+
+  export default defineConfig({
+    plugins: [graphql()],
+  });
+  ```
+
+- **設定のカスタマイズ (`package.json`)**:
+  スキーマファイルの場所やカスタムスカラーをプロジェクトルートの `package.json` で指定可能：
+  ```json
+  {
+    "graphqlContentMapper": {
+      "schema": "graphql/schema.graphql",
+      "scalars": {
+        "DateTime": "string"
+      }
+    }
+  }
+  ```
 
 ---
 
